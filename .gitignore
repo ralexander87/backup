@@ -1,0 +1,34 @@
+# Generated or machine-specific files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor and IDE settings
+.idea/
+.vscode/
+
+# Bash project runtime artifacts
+logs/
+tmp/
+run/
+cache/
+*.log
+*.pid
+
+# Backup outputs and archives
+backups/
+archives/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.bak
+
+# Environment and secrets
+.env
+.env.*
+*.key
+*.pem
+secrets/
