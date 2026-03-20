@@ -49,6 +49,7 @@ MANIFEST_FILE=
 PARTIAL_SUMMARY_FILE=
 TEMP_ARCHIVE_PATH=
 LOCK_ACQUIRED=0
+ERROR_REPORTED=0
 declare -a SOURCES=()
 declare -a PARTIAL_WARNINGS=()
 
@@ -74,8 +75,37 @@ warn() {
 }
 
 die() {
-  printf 'Error: %s\n' "$*" >&2
+  report_failure "$*"
   exit 1
+}
+
+report_failure() {
+  local message
+
+  message=$1
+
+  if ((ERROR_REPORTED == 1)); then
+    return 0
+  fi
+
+  ERROR_REPORTED=1
+
+  if [[ -n "$LOG_FILE" ]]; then
+    {
+      printf '[%s] ERROR: %s\n' "$(date '+%F %T')" "$message"
+      [[ -n "$SELECTED_DESTINATION" ]] && printf 'destination=%s\n' "$SELECTED_DESTINATION"
+      [[ -n "$BACKUP_DIR" ]] && printf 'backup_directory=%s\n' "$BACKUP_DIR"
+      [[ -n "$TEMP_ARCHIVE_PATH" ]] && printf 'temporary_archive=%s\n' "$TEMP_ARCHIVE_PATH"
+      printf 'user=%s\n' "$USER"
+      printf 'next_checks=verify mount, free space, source paths, rsync output, and write permissions\n'
+    } >>"$LOG_FILE"
+  fi
+
+  printf 'Error: %s\n' "$message" >&2
+  [[ -n "$SELECTED_DESTINATION" ]] && printf 'Destination: %s\n' "$SELECTED_DESTINATION" >&2
+  [[ -n "$BACKUP_DIR" ]] && printf 'Backup directory: %s\n' "$BACKUP_DIR" >&2
+  [[ -n "$LOG_FILE" ]] && printf 'Error log: %s\n' "$LOG_FILE" >&2
+  printf 'Useful checks: mounted device, free space, source paths, rsync output, and write permissions.\n' >&2
 }
 
 cleanup() {
@@ -92,12 +122,12 @@ cleanup() {
 on_error() {
   local line_no
   local exit_code
+  local message
 
   line_no=$1
   exit_code=$2
-
-  printf 'Error: %s failed at line %s with exit code %s\n' \
-    "$SCRIPT_NAME" "$line_no" "$exit_code" >&2
+  message="${SCRIPT_NAME} failed at line ${line_no} with exit code ${exit_code}"
+  report_failure "$message"
 }
 
 trap 'on_error "${LINENO}" "$?"' ERR
@@ -110,6 +140,21 @@ require_command() {
   for cmd in "$@"; do
     command -v "$cmd" >/dev/null 2>&1 || die "Required command not found: $cmd"
   done
+}
+
+get_host_name() {
+  # Prefer hostname when available, otherwise fall back to hostnamectl.
+  if command -v hostname >/dev/null 2>&1; then
+    hostname
+    return 0
+  fi
+
+  if command -v hostnamectl >/dev/null 2>&1; then
+    hostnamectl --static
+    return 0
+  fi
+
+  die "Could not determine hostname. Install hostname or use hostnamectl."
 }
 
 acquire_lock() {
@@ -264,10 +309,8 @@ prepare_backup_destination() {
 }
 
 initialize_logging() {
-  # Mirror terminal output into a log file inside the backup directory.
+  # Prepare the error log path inside the backup directory.
   LOG_FILE="${BACKUP_DIR}/backup.log"
-  exec > >(tee -a "$LOG_FILE") 2>&1
-  log "Logging initialized: $LOG_FILE"
 }
 
 rsync_for_source() {
@@ -391,7 +434,7 @@ write_manifest() {
 
   # Save metadata that describes this backup run.
   MANIFEST_FILE="${BACKUP_DIR}/backup-manifest.txt"
-  host_name=$(hostname)
+  host_name=$(get_host_name)
 
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
     compression_state="enabled"
@@ -429,7 +472,7 @@ main() {
   fi
 
   # Check dependencies, prevent concurrent runs, and collect the backup plan.
-  require_command rsync find mountpoint df date hostname tee
+  require_command rsync find mountpoint df date
   acquire_lock
   prompt_for_compression
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
