@@ -11,7 +11,11 @@ warn() {
 }
 
 main() {
-  local script_dir source_conf target_conf fonts_dir install_script
+  local script_dir
+  local source_conf
+  local target_conf
+  local fonts_dir
+  local install_script
 
   script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
   source_conf="${script_dir}/hyprland.conf"
@@ -35,7 +39,8 @@ main() {
       log "Running fonts installer with bash: ${install_script}"
       bash "$install_script"
     else
-      warn "fonts directory exists, but install.sh was not found in ${fonts_dir}"
+      warn \
+        "fonts directory exists, but install.sh was not found in ${fonts_dir}"
     fi
   else
     warn "fonts directory not found: ${fonts_dir}"

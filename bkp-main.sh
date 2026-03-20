@@ -89,12 +89,15 @@ get_mounted_devices() {
 
 select_destination() {
   local -n device_list_ref=$1
-  local device_count selection index
+  local device_count
+  local selection
+  local index
 
   device_count=${#device_list_ref[@]}
-  (( device_count > 0 )) || die "No mounted external devices found under /run/media/$USER"
+  ((device_count > 0)) ||
+    die "No mounted external devices found under /run/media/$USER"
 
-  if (( device_count == 1 )); then
+  if ((device_count == 1)); then
     SELECTED_DESTINATION=${device_list_ref[0]}
     log "One mounted destination found: $SELECTED_DESTINATION"
     log "Destination auto-selected and auto-confirmed."
@@ -114,12 +117,12 @@ select_destination() {
       continue
     }
 
-    if (( selection < 1 || selection > device_count )); then
+    if ((selection < 1 || selection > device_count)); then
       printf 'Please choose a number between 1 and %d.\n' "$device_count" >&2
       continue
     fi
 
-    SELECTED_DESTINATION=${device_list_ref[selection - 1]}
+    SELECTED_DESTINATION=${device_list_ref[selection-1]}
     break
   done
 
@@ -134,11 +137,11 @@ prompt_for_compression() {
   reply=${reply:-Y}
 
   case "$reply" in
-    Y|y)
+    Y | y)
       CREATE_COMPRESSED_BACKUP=1
       log "Compressed backup enabled."
       ;;
-    N|n)
+    N | n)
       CREATE_COMPRESSED_BACKUP=0
       log "Compressed backup disabled."
       ;;
@@ -149,7 +152,8 @@ prompt_for_compression() {
 }
 
 build_sources() {
-  local name source_path
+  local name
+  local source_path
 
   SOURCES=()
 
@@ -162,17 +166,19 @@ build_sources() {
     fi
   done
 
-  (( ${#SOURCES[@]} > 0 )) || die "No configured source directories found under $BACKUP_ROOT"
+  ((${#SOURCES[@]} > 0)) ||
+    die "No configured source directories found under $BACKUP_ROOT"
 }
 
 check_free_space() {
-  local destination_path available_gb
+  local destination_path
+  local available_gb
 
   destination_path=$1
   available_gb=$(df -BG --output=avail "$destination_path" | tail -n 1 | tr -dc '0-9')
   [[ -n "$available_gb" ]] || die "Unable to determine free space for: $destination_path"
 
-  if (( available_gb < MIN_FREE_GB )); then
+  if ((available_gb < MIN_FREE_GB)); then
     die "Destination has ${available_gb} GB free. Minimum required is ${MIN_FREE_GB} GB."
   fi
 
@@ -180,7 +186,7 @@ check_free_space() {
 }
 
 prepare_backup_destination() {
-  local timestamp main_dir backup_dir
+  local main_dir backup_dir
 
   BACKUP_TIMESTAMP=$(date "$TIMESTAMP_FORMAT")
   main_dir="${SELECTED_DESTINATION}/MAIN"
@@ -191,7 +197,9 @@ prepare_backup_destination() {
 }
 
 rsync_for_source() {
-  local source target_dir rsync_exit
+  local source
+  local target_dir
+  local rsync_exit
   local -a extra_opts=()
 
   source=$1
@@ -232,10 +240,10 @@ rsync_for_source() {
   set -e
 
   case "$rsync_exit" in
-    0)
-      ;;
-    23|24)
-      log "rsync returned partial-transfer code ${rsync_exit} for $source; continuing."
+    0) ;;
+    23 | 24)
+      log \
+        "rsync returned partial-transfer code ${rsync_exit} for $source; continuing."
       ;;
     *)
       die "rsync failed with exit code ${rsync_exit} for source: $source"
@@ -255,7 +263,10 @@ run_backup() {
 }
 
 create_compressed_backup() {
-  local destination_dir archive_name temp_archive archive_path
+  local destination_dir
+  local archive_name
+  local temp_archive
+  local archive_path
 
   destination_dir=$1
   archive_name="$(basename "$destination_dir").tar.gz"
@@ -279,22 +290,24 @@ create_compressed_backup() {
 }
 
 main() {
+  # shellcheck disable=SC2034
   local -a mounted_devices=()
   local destination_dir
 
-  if (( $# > 0 )); then
+  if (($# > 0)); then
     usage >&2
     exit 64
   fi
 
   require_command rsync find mountpoint df date
   prompt_for_compression
-  if (( CREATE_COMPRESSED_BACKUP == 1 )); then
+  if ((CREATE_COMPRESSED_BACKUP == 1)); then
     require_command tar pigz
   fi
 
   build_sources
 
+  # shellcheck disable=SC2034
   mapfile -t mounted_devices < <(get_mounted_devices)
   select_destination mounted_devices
   check_free_space "$SELECTED_DESTINATION"
@@ -304,7 +317,7 @@ main() {
 
   run_backup "$destination_dir"
 
-  if (( CREATE_COMPRESSED_BACKUP == 1 )); then
+  if ((CREATE_COMPRESSED_BACKUP == 1)); then
     create_compressed_backup "$destination_dir"
   fi
 
