@@ -18,11 +18,9 @@ readonly BACKUP_NAMES=(
   Videos
   .config
   .var
-  .ssh
   .icons
   .themes
   .mydotfiles
-  .local
   .oh-my-zsh
 )
 readonly RSYNC_OPTS=(
@@ -220,17 +218,8 @@ rsync_for_source() {
         '--exclude=rambox/'
       )
       ;;
-    .local)
-      extra_opts+=(
-        '--exclude=share/fonts/'
-        '--exclude=share/fonts/NerdFonts/'
-      )
-      ;;
     .var)
       extra_opts+=(--exclude=app/)
-      ;;
-    .ssh)
-      extra_opts+=(--exclude=agent/)
       ;;
   esac
 
@@ -269,7 +258,7 @@ create_compressed_backup() {
   local destination_dir archive_name temp_archive archive_path
 
   destination_dir=$1
-  archive_name="BKP-${BACKUP_TIMESTAMP}.tar.gz"
+  archive_name="$(basename "$destination_dir").tar.gz"
   temp_archive="${SELECTED_DESTINATION}/MAIN/.${archive_name}.tmp"
   archive_path="${destination_dir}/${archive_name}"
 
