@@ -4,7 +4,7 @@ SHELL := /usr/bin/env bash
 
 lint:
 	@if command -v shellcheck >/dev/null 2>&1; then \
-		shellcheck scripts/*.sh; \
+		find . -maxdepth 2 -type f -name '*.sh' -print0 | xargs -0r shellcheck; \
 	else \
 		echo "shellcheck is not installed"; \
 	fi
