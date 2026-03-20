@@ -68,6 +68,7 @@ warn() {
 require_command() {
   local cmd
 
+  # Ensure required tools exist before the backup starts.
   for cmd in "$@"; do
     command -v "$cmd" >/dev/null 2>&1 || die "Required command not found: $cmd"
   done
@@ -76,6 +77,7 @@ require_command() {
 get_mounted_devices() {
   local media_root mount_point
 
+  # Find mounted external devices under /run/media/$USER.
   media_root="/run/media/$USER"
   [[ -d "$media_root" ]] || return 0
 
@@ -93,6 +95,7 @@ select_destination() {
   local selection
   local index
 
+  # Auto-select one destination or let the user choose from multiple devices.
   device_count=${#device_list_ref[@]}
   ((device_count > 0)) ||
     die "No mounted external devices found under /run/media/$USER"
@@ -133,6 +136,7 @@ select_destination() {
 prompt_for_compression() {
   local reply
 
+  # Ask whether a compressed archive should be created in addition to raw files.
   read -r -p 'Create compressed version with pigz? [Y/n]: ' reply
   reply=${reply:-Y}
 
@@ -155,6 +159,7 @@ build_sources() {
   local name
   local source_path
 
+  # Build the list of configured home directories that actually exist.
   SOURCES=()
 
   for name in "${BACKUP_NAMES[@]}"; do
@@ -174,6 +179,7 @@ check_free_space() {
   local destination_path
   local available_gb
 
+  # Stop early if the destination does not have enough free space.
   destination_path=$1
   available_gb=$(df -BG --output=avail "$destination_path" | tail -n 1 | tr -dc '0-9')
   [[ -n "$available_gb" ]] || die "Unable to determine free space for: $destination_path"
@@ -188,6 +194,7 @@ check_free_space() {
 prepare_backup_destination() {
   local main_dir backup_dir
 
+  # Create the MAIN/BKP-<timestamp> destination directory for this run.
   BACKUP_TIMESTAMP=$(date "$TIMESTAMP_FORMAT")
   main_dir="${SELECTED_DESTINATION}/MAIN"
   backup_dir="${main_dir}/BKP-${BACKUP_TIMESTAMP}"
@@ -202,6 +209,7 @@ rsync_for_source() {
   local rsync_exit
   local -a extra_opts=()
 
+  # Apply source-specific excludes before syncing with preserved metadata.
   source=$1
   target_dir=$2
 
@@ -254,6 +262,7 @@ rsync_for_source() {
 run_backup() {
   local destination_dir source target_dir
 
+  # Copy each configured source into its own folder inside the backup root.
   destination_dir=$1
 
   for source in "${SOURCES[@]}"; do
@@ -268,6 +277,7 @@ create_compressed_backup() {
   local temp_archive
   local archive_path
 
+  # Create a pigz-compressed archive that matches the backup folder name.
   destination_dir=$1
   archive_name="$(basename "$destination_dir").tar.gz"
   temp_archive="${SELECTED_DESTINATION}/MAIN/.${archive_name}.tmp"
@@ -294,11 +304,13 @@ main() {
   local -a mounted_devices=()
   local destination_dir
 
+  # This script is designed to run without positional arguments.
   if (($# > 0)); then
     usage >&2
     exit 64
   fi
 
+  # Check dependencies and collect the backup plan.
   require_command rsync find mountpoint df date
   prompt_for_compression
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
@@ -307,6 +319,7 @@ main() {
 
   build_sources
 
+  # Select the destination device and prepare the timestamped backup folder.
   # shellcheck disable=SC2034
   mapfile -t mounted_devices < <(get_mounted_devices)
   select_destination mounted_devices
@@ -315,6 +328,7 @@ main() {
   destination_dir=$(prepare_backup_destination)
   log "Backup destination ready: $destination_dir"
 
+  # Run the raw backup first, then optionally create the compressed archive.
   run_backup "$destination_dir"
 
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
