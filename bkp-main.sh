@@ -8,6 +8,7 @@ readonly SCRIPT_VERSION="1.0.0"
 readonly MIN_FREE_GB=20
 readonly TIMESTAMP_FORMAT='+%j-%d-%m-%H-%M-%S'
 readonly BACKUP_ROOT="/home/$USER"
+readonly DOTFILES_RESTORE_RELATIVE_PATH=".mydotfiles/com.ml4w.dotfiles.stable/.config/restore-dots.sh"
 readonly DESTINATION_PARENT_NAME="MAIN"
 readonly BACKUP_PREFIX="BKP"
 readonly LOCK_DIR="/tmp/bkp-main.lock"
@@ -52,6 +53,7 @@ LOCK_ACQUIRED=0
 ERROR_REPORTED=0
 SCRIPT_DIR=
 RESTORE_SCRIPT_SOURCE=
+RESTORE_DOTS_SCRIPT_SOURCE=
 declare -a SOURCES=()
 declare -a PARTIAL_WARNINGS=()
 
@@ -319,6 +321,7 @@ resolve_script_dir() {
   # Resolve the directory where this script is located.
   SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
   RESTORE_SCRIPT_SOURCE="${SCRIPT_DIR}/restore-main.sh"
+  RESTORE_DOTS_SCRIPT_SOURCE="${SCRIPT_DIR}/restore-dots.sh"
 }
 
 rsync_for_source() {
@@ -392,14 +395,24 @@ run_backup() {
 
 copy_restore_script() {
   local restore_target
+  local restore_dots_target_dir
+  local restore_dots_target
 
   # Copy the restore helper into the same backup directory.
   [[ -f "$RESTORE_SCRIPT_SOURCE" ]] ||
     die "Restore script not found: $RESTORE_SCRIPT_SOURCE"
+  [[ -f "$RESTORE_DOTS_SCRIPT_SOURCE" ]] ||
+    die "Restore script not found: $RESTORE_DOTS_SCRIPT_SOURCE"
 
   restore_target="${BACKUP_DIR}/$(basename "$RESTORE_SCRIPT_SOURCE")"
   cp -a "$RESTORE_SCRIPT_SOURCE" "$restore_target"
   log "Copied restore script -> $restore_target"
+
+  restore_dots_target="${BACKUP_DIR}/${DOTFILES_RESTORE_RELATIVE_PATH}"
+  restore_dots_target_dir=$(dirname "$restore_dots_target")
+  mkdir -p "$restore_dots_target_dir"
+  cp -a "$RESTORE_DOTS_SCRIPT_SOURCE" "$restore_dots_target"
+  log "Copied dotfiles restore script -> $restore_dots_target"
 }
 
 create_compressed_backup() {

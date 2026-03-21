@@ -163,6 +163,9 @@ main() {
 
   # Run the root-required SDDM change last.
   update_sddm_user
+
+  # Optionally run the ML4W install command at the end.
+  prompt_for_ml4w_install
 }
 
 update_sddm_user() {
@@ -198,6 +201,28 @@ update_sddm_user() {
 
   log "Updating SDDM autologin user in ${sddm_conf}"
   sudo sed -i "s/^User=.*/User=${autologin_user}/" "$sddm_conf"
+}
+
+prompt_for_ml4w_install() {
+  local reply
+
+  # Ask whether the ML4W setup command should be executed.
+  read -r -p 'Run ML4W install command now? [Y/n]: ' reply
+  reply=${reply:-Y}
+
+  case "$reply" in
+    Y | y)
+      require_command curl
+      log "Running ML4W install command"
+      bash <(curl -s https://ml4w.com/os/stable)
+      ;;
+    N | n)
+      log "Skipping ML4W install command."
+      ;;
+    *)
+      die "Invalid answer. Please enter Y, y, N, n, or press Enter for default Y."
+      ;;
+  esac
 }
 
 main "$@"
