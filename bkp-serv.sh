@@ -10,6 +10,7 @@ readonly RUN_AS_USER="${SUDO_USER:-$USER}"
 readonly MEDIA_ROOT="/run/media/${RUN_AS_USER}"
 readonly DESTINATION_PARENT_NAME="SERV"
 readonly BACKUP_PREFIX="SERV"
+readonly RESTORE_SCRIPT_SOURCE="/home/ralexander/Code/BKP/restore-serv.sh"
 readonly LOCK_DIR="/tmp/bkp-serv.lock"
 readonly BACKUP_SOURCES=(
   /etc/ssh/sshd_config
@@ -356,6 +357,18 @@ run_backup() {
   done
 }
 
+copy_restore_script() {
+  local restore_target
+
+  # Copy the restore helper into the same backup directory.
+  [[ -f "$RESTORE_SCRIPT_SOURCE" ]] ||
+    die "Restore script not found: $RESTORE_SCRIPT_SOURCE"
+
+  restore_target="${BACKUP_DIR}/$(basename "$RESTORE_SCRIPT_SOURCE")"
+  cp -a "$RESTORE_SCRIPT_SOURCE" "$restore_target"
+  log "Copied restore script -> $restore_target"
+}
+
 main() {
   # shellcheck disable=SC2034
   local -a mounted_devices=()
@@ -384,6 +397,7 @@ main() {
   # Run the backup using rsync with metadata-preserving options.
   backup_luks_headers
   run_backup
+  copy_restore_script
 
   log "Backup completed."
   log "Latest backup path: $BACKUP_DIR"
