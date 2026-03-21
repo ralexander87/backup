@@ -2,6 +2,9 @@
 
 set -Eeuo pipefail
 
+# Keep this two lines. is for my custom configuratin
+# bash <(curl -s https://ml4w.com/os/stable)
+
 SCRIPT_NAME=$(basename "$0")
 readonly SCRIPT_NAME
 readonly SCRIPT_VERSION="1.0.0"
@@ -75,6 +78,27 @@ initialize_logging() {
   log "Script version: $SCRIPT_VERSION"
 }
 
+prompt_for_fonts_install() {
+  local reply
+
+  # Ask whether the optional fonts installer should be executed.
+  read -r -p 'Install fonts from fonts/install.sh? [Y/n]: ' reply
+  reply=${reply:-Y}
+
+  case "$reply" in
+    Y | y)
+      return 0
+      ;;
+    N | n)
+      log "Skipping fonts installation."
+      return 1
+      ;;
+    *)
+      die "Invalid answer. Please enter Y, y, N, n, or press Enter for default Y."
+      ;;
+  esac
+}
+
 copy_hyprland_config() {
   local script_dir
   local source_conf
@@ -133,7 +157,9 @@ main() {
 
   # Run non-root setup tasks first.
   copy_hyprland_config "$script_dir"
-  run_fonts_installer "$script_dir"
+  if prompt_for_fonts_install; then
+    run_fonts_installer "$script_dir"
+  fi
 
   # Run the root-required SDDM change last.
   update_sddm_user
@@ -143,6 +169,7 @@ update_sddm_user() {
   local sddm_conf
   local backup_suffix
   local backup_conf
+  local autologin_user
 
   # Backup the SDDM config and set the autologin user with sudo.
   sddm_conf="/usr/lib/sddm/sddm.conf.d/default.conf"
@@ -163,11 +190,14 @@ update_sddm_user() {
     die "Backup file already exists: ${backup_conf}"
   fi
 
+  read -r -p 'Enter the SDDM autologin username: ' autologin_user
+  [[ -n "$autologin_user" ]] || die "Autologin username cannot be empty."
+
   log "Creating SDDM config backup: ${backup_conf}"
   sudo cp -a "$sddm_conf" "$backup_conf"
 
   log "Updating SDDM autologin user in ${sddm_conf}"
-  sudo sed -i 's/^User=.*/User=ralexander/' "$sddm_conf"
+  sudo sed -i "s/^User=.*/User=${autologin_user}/" "$sddm_conf"
 }
 
 main "$@"

@@ -10,7 +10,6 @@ readonly RUN_AS_USER="${SUDO_USER:-$USER}"
 readonly MEDIA_ROOT="/run/media/${RUN_AS_USER}"
 readonly DESTINATION_PARENT_NAME="SERV"
 readonly BACKUP_PREFIX="SERV"
-readonly RESTORE_SCRIPT_SOURCE="/home/ralexander/Code/BKP/restore-serv.sh"
 readonly LOCK_DIR="/tmp/bkp-serv.lock"
 readonly BACKUP_SOURCES=(
   /etc/ssh/sshd_config
@@ -43,6 +42,8 @@ BACKUP_DIR=
 LOG_FILE=
 LOCK_ACQUIRED=0
 ERROR_REPORTED=0
+SCRIPT_DIR=
+RESTORE_SCRIPT_SOURCE=
 declare -a SOURCES=()
 declare -a PARTIAL_WARNINGS=()
 
@@ -289,6 +290,12 @@ initialize_logging() {
   LOG_FILE="${BACKUP_DIR}/backup.log"
 }
 
+resolve_script_dir() {
+  # Resolve the directory where this script is located.
+  SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+  RESTORE_SCRIPT_SOURCE="${SCRIPT_DIR}/restore-serv.sh"
+}
+
 backup_luks_headers() {
   local luks_device
   local header_file
@@ -382,6 +389,7 @@ main() {
   require_root "$@"
   check_sources
   acquire_lock
+  resolve_script_dir
 
   # Select the destination device and prepare the timestamped backup folder.
   # shellcheck disable=SC2034

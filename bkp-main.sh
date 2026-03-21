@@ -8,7 +8,6 @@ readonly SCRIPT_VERSION="1.0.0"
 readonly MIN_FREE_GB=20
 readonly TIMESTAMP_FORMAT='+%j-%d-%m-%H-%M-%S'
 readonly BACKUP_ROOT="/home/$USER"
-readonly RESTORE_SCRIPT_SOURCE="/home/ralexander/Code/BKP/restore-main.sh"
 readonly DESTINATION_PARENT_NAME="MAIN"
 readonly BACKUP_PREFIX="BKP"
 readonly LOCK_DIR="/tmp/bkp-main.lock"
@@ -51,6 +50,8 @@ PARTIAL_SUMMARY_FILE=
 TEMP_ARCHIVE_PATH=
 LOCK_ACQUIRED=0
 ERROR_REPORTED=0
+SCRIPT_DIR=
+RESTORE_SCRIPT_SOURCE=
 declare -a SOURCES=()
 declare -a PARTIAL_WARNINGS=()
 
@@ -314,6 +315,12 @@ initialize_logging() {
   LOG_FILE="${BACKUP_DIR}/backup.log"
 }
 
+resolve_script_dir() {
+  # Resolve the directory where this script is located.
+  SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+  RESTORE_SCRIPT_SOURCE="${SCRIPT_DIR}/restore-main.sh"
+}
+
 rsync_for_source() {
   local source
   local target_dir
@@ -487,6 +494,7 @@ main() {
   # Check dependencies, prevent concurrent runs, and collect the backup plan.
   require_command rsync find mountpoint df date
   acquire_lock
+  resolve_script_dir
   prompt_for_compression
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
     require_command tar pigz
