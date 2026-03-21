@@ -63,6 +63,12 @@ require_command() {
   done
 }
 
+ensure_sudo_access() {
+  # Prompt for sudo access before restoring system-owned files.
+  log "Root privileges are required for the system restore step."
+  sudo -v
+}
+
 acquire_lock() {
   # Prevent more than one restore run at the same time.
   if mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -102,8 +108,77 @@ restore_ssh_directory() {
   find "$target_ssh" -type f ! -name '*.pub' -exec chmod 600 {} +
 }
 
+restore_sshd_config() {
+  local source_file
+  local target_dir
+  local target_file
+
+  # Restore sshd_config into /etc/ssh when the target directory exists.
+  source_file="${SOURCE_DIR}/sshd_config"
+  target_dir="/etc/ssh"
+  target_file="${target_dir}/sshd_config"
+
+  if [[ ! -d "$target_dir" ]]; then
+    warn "Target directory not found: $target_dir"
+    return 0
+  fi
+
+  if [[ ! -f "$source_file" ]]; then
+    warn "Restore source not found: $source_file"
+    return 0
+  fi
+
+  log "Restoring $source_file -> $target_file"
+  sudo cp -a "$source_file" "$target_file"
+}
+
+restore_samba_config() {
+  local source_file
+  local target_dir
+  local target_file
+  local creds_file
+  local found_creds
+
+  # Restore Samba config files into /etc/samba when the target directory exists.
+  source_file="${SOURCE_DIR}/smb.conf"
+  target_dir="/etc/samba"
+  target_file="${target_dir}/smb.conf"
+
+  if [[ ! -d "$target_dir" ]]; then
+    warn "Target directory not found: $target_dir"
+    return 0
+  fi
+
+  if [[ -f "$source_file" ]]; then
+    log "Restoring $source_file -> $target_file"
+    sudo cp -a "$source_file" "$target_file"
+  else
+    warn "Restore source not found: $source_file"
+  fi
+
+  found_creds=0
+  for creds_file in "${SOURCE_DIR}"/creds-*; do
+    if [[ -f "$creds_file" ]]; then
+      found_creds=1
+      log "Restoring $creds_file -> $target_dir"
+      sudo cp -a "$creds_file" "$target_dir/"
+    fi
+  done
+
+  if ((found_creds == 0)); then
+    warn "No creds-* files found in: $SOURCE_DIR"
+  fi
+}
+
+restore_root_owned_files() {
+  # Run the root-required restore steps after the user-owned restore.
+  ensure_sudo_access
+  restore_sshd_config
+  restore_samba_config
+}
+
 main() {
-  require_command rsync date chmod find
+  require_command rsync date chmod find sudo cp
   acquire_lock
   resolve_source_dir
 
@@ -112,6 +187,9 @@ main() {
 
   # Run the non-root SSH restore flow.
   restore_ssh_directory
+
+  # Run the root-required system restore flow.
+  restore_root_owned_files
 
   log "Restore completed."
 }
