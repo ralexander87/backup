@@ -8,6 +8,7 @@ readonly SCRIPT_VERSION="1.0.0"
 readonly MIN_FREE_GB=20
 readonly TIMESTAMP_FORMAT='+%j-%d-%m-%H-%M-%S'
 readonly BACKUP_ROOT="/home/$USER"
+readonly RESTORE_SCRIPT_SOURCE="/home/ralexander/Code/BKP/restore-main.sh"
 readonly DESTINATION_PARENT_NAME="MAIN"
 readonly BACKUP_PREFIX="BKP"
 readonly LOCK_DIR="/tmp/bkp-main.lock"
@@ -382,6 +383,18 @@ run_backup() {
   done
 }
 
+copy_restore_script() {
+  local restore_target
+
+  # Copy the restore helper into the same backup directory.
+  [[ -f "$RESTORE_SCRIPT_SOURCE" ]] ||
+    die "Restore script not found: $RESTORE_SCRIPT_SOURCE"
+
+  restore_target="${BACKUP_DIR}/$(basename "$RESTORE_SCRIPT_SOURCE")"
+  cp -a "$RESTORE_SCRIPT_SOURCE" "$restore_target"
+  log "Copied restore script -> $restore_target"
+}
+
 create_compressed_backup() {
   local archive_name
   local archive_path
@@ -494,6 +507,7 @@ main() {
 
   # Run the raw backup first, then optionally create the compressed archive.
   run_backup
+  copy_restore_script
 
   if ((CREATE_COMPRESSED_BACKUP == 1)); then
     create_compressed_backup
