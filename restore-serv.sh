@@ -301,15 +301,15 @@ update_fstab_entries() {
       printf '%s\n' '//192.168.8.60/d   /SMB/euclid   cifs   _netdev,credentials=/etc/samba/creds-euclid,uid=1000,gid=1000   0 0'
       printf '\n'
     fi
-    if ! sudo grep -Fqx '//192.168.8.150/hdd-01   /SMB/SCP/HDD-01   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
+    if ! sudo grep -Fqx '//192.168.8.101/hd-01   /SMB/SCP/HDD-01   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
       printf '# Proxmox\n'
-      printf '%s\n' '//192.168.8.150/hdd-01   /SMB/SCP/HDD-01   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
+      printf '%s\n' '//192.168.8.101/hd-01   /SMB/SCP/HDD-01   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
     fi
-    if ! sudo grep -Fqx '//192.168.8.150/hdd-02   /SMB/SCP/HDD-02   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
-      printf '%s\n' '//192.168.8.150/hdd-02   /SMB/SCP/HDD-02   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
+    if ! sudo grep -Fqx '//192.168.8.101/hd-02   /SMB/SCP/HDD-02   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
+      printf '%s\n' '//192.168.8.101/hd-02   /SMB/SCP/HDD-02   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
     fi
-    if ! sudo grep -Fqx '//192.168.8.150/hdd-03   /SMB/SCP/HDD-03   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
-      printf '%s\n' '//192.168.8.150/hdd-03   /SMB/SCP/HDD-03   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
+    if ! sudo grep -Fqx '//192.168.8.101/hd-03   /SMB/SCP/HDD-03   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0' "$fstab_file"; then
+      printf '%s\n' '//192.168.8.101/hd-03   /SMB/SCP/HDD-03   cifs   _netdev,credentials=/etc/samba/creds-scp,uid=1000,gid=1000   0 0'
     fi
   } | sudo tee -a "$fstab_file" >/dev/null
 }
