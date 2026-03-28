@@ -373,6 +373,32 @@ update_grub_defaults() {
   fi
 }
 
+restore_grub_theme() {
+  local source_dir
+  local target_parent
+  local target_dir
+
+  # Restore the backed-up GRUB theme directory into /boot/grub/themes.
+  source_dir="${SOURCE_DIR}/lateralus"
+  target_parent="/boot/grub/themes"
+  target_dir="${target_parent}/lateralus"
+
+  if [[ ! -d "$target_parent" ]]; then
+    warn "Target directory not found: $target_parent"
+    return 0
+  fi
+
+  if [[ ! -d "$source_dir" ]]; then
+    warn "Restore source not found: $source_dir"
+    return 0
+  fi
+
+  backup_root_target "$target_dir"
+  log "Restoring $source_dir -> $target_dir"
+  sudo mkdir -p "$target_parent"
+  sudo rsync "${RSYNC_OPTS[@]}" "$source_dir" "$target_parent/"
+}
+
 update_grub_config() {
   # Regenerate grub.cfg after updating /etc/default/grub.
   backup_root_target "/boot/grub/grub.cfg"
@@ -390,6 +416,7 @@ restore_root_owned_files() {
   prepare_smb_directories
   update_fstab_entries
   update_grub_defaults
+  restore_grub_theme
   update_grub_config
 }
 

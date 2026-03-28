@@ -2,6 +2,16 @@
 
 Local project for developing backup and restore Bash scripts.
 
+## Arch setup
+
+After a fresh Arch Linux reinstall, install the tools this project expects:
+
+```bash
+sudo pacman -S --needed bash rsync sudo grub cifs-utils samba openssh shfmt shellcheck
+```
+
+`make check` will still run if `shfmt` or `shellcheck` are missing, but it will report that those tools are not installed.
+
 ## Initial layout
 
 - `scripts/` for executable backup and restore scripts
