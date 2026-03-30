@@ -26,6 +26,7 @@ archives/
 *.tgz
 *.zip
 *.bak
+*.bak-*
 
 # Environment and secrets
 .env
@@ -33,3 +34,6 @@ archives/
 *.key
 *.pem
 secrets/
+
+# Local copied repo metadata
+backup/
