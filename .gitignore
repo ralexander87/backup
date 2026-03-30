@@ -37,3 +37,4 @@ secrets/
 
 # Local copied repo metadata
 backup/
+starter.sh
