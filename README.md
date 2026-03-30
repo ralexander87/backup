@@ -1,11 +1,17 @@
 # BKP
 
-BKP is a small Bash-based backup and restore toolkit for an Arch Linux desktop or workstation. It is built around two main jobs:
+BKP is a Bash-based backup and restore toolkit for an Arch Linux desktop or workstation. It focuses on a practical rebuild workflow: backing up user data, preserving selected system configuration, and restoring the machine after a reinstall with a small set of standard Linux tools.
 
-- backing up user data from the home directory
-- backing up system-level configuration that is useful after a reinstall
+The project is intentionally lightweight. It relies on tools such as `rsync`, `tar`, `pigz`, `systemctl`, and `sudo` rather than a larger backup framework.
 
-The project is intentionally simple. It uses standard Linux tools such as `rsync`, `tar`, `pigz`, `systemctl`, and `sudo` rather than a larger backup framework.
+## Highlights
+
+- Separate backup flows for user data and system configuration
+- Restore helpers copied into each backup set
+- Metadata-preserving `rsync` operations with timestamped backup folders
+- Optional compressed archives for the main backup flow
+- LUKS header backup support for detected NVMe devices
+- Simple Bash implementation that is easy to inspect and adapt
 
 ## What This Project Does
 
@@ -181,7 +187,15 @@ make check
 - Some restore behavior is host-specific and network-specific, especially in the Samba, CIFS, and service sections.
 - `restore-serv.sh` changes live system files. Read it before running it on a machine you care about.
 - The scripts create timestamped backup copies of some targets before overwriting them, but you should still treat restore operations as high-impact.
-- If you want to publish or reuse this project, review hard-coded paths, hostnames, share names, and service assumptions first.
+- If you want to reuse this project, review hard-coded paths, hostnames, share names, and service assumptions first.
+
+## Contributing
+
+Issues and pull requests are welcome, especially for improvements that make the scripts safer, clearer, and easier to adapt to other Arch-based setups.
+
+## License
+
+This project is licensed under the GNU General Public License v3.0. See `LICENSE` for the full text.
 
 ## Development
 
