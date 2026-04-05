@@ -169,6 +169,12 @@ Code formatting and lint checks:
 make check
 ```
 
+Project bootstrap after a fresh OS install:
+
+```bash
+./scripts/setup-dev.sh
+```
+
 ## Project Layout
 
 - `bkp-main.sh`: main user-data backup script
@@ -204,6 +210,7 @@ The repository is plain Bash and intentionally lightweight.
 Useful commands:
 
 ```bash
+./scripts/setup-dev.sh
 make fmt
 make lint
 make check
